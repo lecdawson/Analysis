@@ -22,7 +22,7 @@ void alphaLengthCuts()
   TH1F *h2 = new TH1F("h2", "h2", 50, 0, 500);
   TH1F *h3 = new TH1F("h3", "h3", 50, 0, 500);
   TH1F *h_total = new TH1F("h_total", "h_total", 50, 0, 500);
-  TH1F *h_test = new TH1F("h_test", "h_test", 50, 0, 500);
+  TH1F *data = new TH1F("data", "data", 50, 0, 500);
   h3->SetTitle("Alpha track lengths Bi214, 3E5 1e1a wires, cut at 10 #mus, xy distance 40 cm");
   h3->GetYaxis()->SetTitle("Number of events");
   h3->GetXaxis()->SetTitle("Alpha length (mm)");
@@ -121,7 +121,7 @@ void alphaLengthCuts()
 
   double exposure=60;
   double exposure_in_seconds=exposure*24*60*60;
-  //
+
   h_total->Add(h1);
   h_total->Add(h2);
   h_total->Add(h3);
@@ -129,19 +129,77 @@ void alphaLengthCuts()
   h_total->Scale(exposure_in_seconds);
   //h_total->Draw("hist");
 
-  h_test->SetMarkerStyle(20);
-  h_test->SetMarkerSize(0.7);
+  data->SetMarkerStyle(20);
+  data->SetMarkerSize(0.7);
 
   // Now need to generate sudo data from these histograms
   // Use GetRandom n times, where n is a randomly generated number of events
   // based on poissonian law.
   TRandom *eventGenerator = new TRandom3();
-  for(int pseudo; pseudo<100; pseudo++){
-    int number_of_entries = 0;
-    int random_number_of_entries = eventGenerator->Poisson(30000);
-    std::cout << "Number of entries: " << random_number_of_entries << std::endl;
-    for(int n=0; n<random_number_of_entries; n++){
-      h_test->Fill(h_total->GetRandom());
-    }
-  }
+  int random_number_of_entries = eventGenerator->Poisson(30000);
+  for(int n=0; n<random_number_of_entries; n++){
+       data->Fill(h_total->GetRandom());
+     }
+
+  // Test TFractionFitter
+  TObjArray *mc = new TObjArray(3);
+  //Scale indvidual templates
+  h1->Scale(exposure_in_seconds);
+  h2->Scale(exposure_in_seconds);
+  h3->Scale(exposure_in_seconds);
+  mc->Add(h1);
+  mc->Add(h2);
+  mc->Add(h3);
+  double value[3];
+  double error[3];
+  TH1D* lengthcontrib[3];
+  TH1D* fitresult;
+
+  TFractionFitter* fit = new TFractionFitter(data, mc);
+  Int_t status = fit->Fit();
+  std::cout << "fit status: " << status << std::endl;
+  if (status == 0) {                       // check on fit status
+     fitresult = (TH1D*) fit->GetPlot();
+     for (int i=0; i<3; i++){
+         fit -> GetResult(i,value[i],error[i]);
+         lengthcontrib[i] = (TH1D*)fit -> GetMCPrediction(i);
+         lengthcontrib[i] -> Scale( (value[i]*data->Integral()) / (lengthcontrib[i]->Integral()) );
+     }
+     data->Draw("Ep");
+     fitresult->Draw("same");
+     fitresult->SetLineColor(kBlack);
+     lengthcontrib[2]->SetLineColor(kRed);
+     lengthcontrib[2]->SetFillColor(kRed);
+     lengthcontrib[2]->SetFillStyle(3002);
+     lengthcontrib[0]->SetLineColor(kGray+2);
+     lengthcontrib[0]->SetFillColor(kGray+2);
+     lengthcontrib[0]->SetFillStyle(3002);
+     lengthcontrib[1]->SetLineColor(kBlue-3);
+     lengthcontrib[1]->SetFillColor(kBlue-3);
+     lengthcontrib[1]->SetFillStyle(3002);
+     lengthcontrib[2]->Draw("hist same");
+     lengthcontrib[0]->Draw("hist same");
+     lengthcontrib[1]->Draw("hist same");
+     data->SetTitle("Pseudo-experiment with three contributions after 60 day exposure");
+     data->GetXaxis()->SetTitle("Alpha Lengths [mm]");
+   }
+
+   TLegend *leg = new TLegend(0.1293878,0.5787037,0.295102,0.9074074);
+   leg->SetFillColor(0);
+   leg->AddEntry(data,"Data","lep");
+   leg->AddEntry(fitresult,"Fit Result","l");
+   leg->AddEntry(lengthcontrib[0],"Scaled {}^{214}Bi Bulk","f");
+   leg->AddEntry(lengthcontrib[1],"Scaled {}^{214}Bi Surface","f");
+   leg->AddEntry(lengthcontrib[2],"Scaled {}^{214}Bi Tracker","f");
+   leg->Draw("same");
+  // for(int pseudo; pseudo<100; pseudo++){
+  //   int number_of_entries = 0;
+  //   int random_number_of_entries = eventGenerator->Poisson(30000);
+  //   std::cout << "Number of entries: " << random_number_of_entries << std::endl;
+  //   for(int n=0; n<random_number_of_entries; n++){
+  //     data->Fill(h_total->GetRandom());
+  //   }
+  // }
+
+
 }
