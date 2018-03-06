@@ -17,14 +17,16 @@ void basicElectronPlots()
   int entriesSurf=treeSurf->GetEntries();
   int entriesWire=treeWire->GetEntries();
 
-  TH1F *h1 = new TH1F("h1", "h1", 170, 0, 3.4);
-  TH1F *h2 = new TH1F("h2", "h2", 50, 0, 500);
-  TH1F *h3 = new TH1F("h3", "h3", 50, 0, 500);
-  h1->SetTitle("Energy spectrum of electrons, Bi214, 3E5 events surface of source foil");
+  TH1F *h1 = new TH1F("h1", "h1", 39, 0, 39);
+  TH1F *h2 = new TH1F("h2", "h2", 39, 0, 39);
+  TH1F *h3 = new TH1F("h3", "h3", 39, 0, 39);
+  h1->SetTitle("Number of geiger hits for electrons, Bi214, 3E5 events all generators");
   h1->GetYaxis()->SetTitle("Number of events");
-  h1->GetXaxis()->SetTitle("Energy [MeV]");
+  h1->GetXaxis()->SetTitle("Number of hits");
 
-  h1->SetLineColor(kBlack);
+  h1->SetLineColor(kGray+2);
+  h2->SetLineColor(kBlue-3);
+  h3->SetLineColor(kRed);
 
   vector<double> *electron_energies=0;
   vector<int> *electron_hit_counts=0;
@@ -34,6 +36,14 @@ void basicElectronPlots()
   vector<bool> *electronsFromFoil=0;
   int number_of_electrons=0;
 
+  treeFoil->SetBranchAddress("reco.electron_energies", &electron_energies);
+  treeFoil->SetBranchAddress("reco.electron_track_lengths", &electron_track_lengths);
+  treeFoil->SetBranchAddress("reco.electron_hit_counts", &electron_hit_counts);
+  treeFoil->SetBranchAddress("reco.number_of_electrons", &number_of_electrons);
+  treeFoil->SetBranchAddress("reco.electron_hits_mainwall", &electron_hits_main_wall);
+  treeFoil->SetBranchAddress("reco.electron_charges", &electron_charges);
+  treeFoil->SetBranchAddress("reco.electrons_from_foil", &electronsFromFoil);
+
   treeSurf->SetBranchAddress("reco.electron_energies", &electron_energies);
   treeSurf->SetBranchAddress("reco.electron_track_lengths", &electron_track_lengths);
   treeSurf->SetBranchAddress("reco.electron_hit_counts", &electron_hit_counts);
@@ -42,18 +52,54 @@ void basicElectronPlots()
   treeSurf->SetBranchAddress("reco.electron_charges", &electron_charges);
   treeSurf->SetBranchAddress("reco.electrons_from_foil", &electronsFromFoil);
 
-  for(int entry = 0; entry < entriesSurf; entry++)
-  {
+  treeWire->SetBranchAddress("reco.electron_energies", &electron_energies);
+  treeWire->SetBranchAddress("reco.electron_track_lengths", &electron_track_lengths);
+  treeWire->SetBranchAddress("reco.electron_hit_counts", &electron_hit_counts);
+  treeWire->SetBranchAddress("reco.number_of_electrons", &number_of_electrons);
+  treeWire->SetBranchAddress("reco.electron_hits_mainwall", &electron_hits_main_wall);
+  treeWire->SetBranchAddress("reco.electron_charges", &electron_charges);
+  treeWire->SetBranchAddress("reco.electrons_from_foil", &electronsFromFoil);
+
+  for(int entry = 0; entry < entriesFoil; entry++){
+    treeFoil->GetEntry(entry);
+    if(number_of_electrons >0){
+      for(int electron=0; electron<number_of_electrons; electron++){
+        if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
+          h1->Fill(electron_hit_counts->at(electron));
+        }
+      }
+    }
+  }
+  for(int entry = 0; entry < entriesSurf; entry++){
     treeSurf->GetEntry(entry);
     if(number_of_electrons >0){
       for(int electron=0; electron<number_of_electrons; electron++){
         if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
-          h1->Fill(electron_energies->at(electron));
+          h2->Fill(electron_hit_counts->at(electron));
+        }
+      }
+    }
+  }
+  for(int entry = 0; entry < entriesWire; entry++){
+    treeWire->GetEntry(entry);
+    if(number_of_electrons >0){
+      for(int electron=0; electron<number_of_electrons; electron++){
+        if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
+          h3->Fill(electron_hit_counts->at(electron));
         }
       }
     }
   }
 
   h1->Draw();
+  h2->Draw("same");
+  h3->Draw("same");
+
+  TLegend *leg = new TLegend(0.4,0.6,0.89,0.89);
+  leg->SetFillColor(0);
+  leg->AddEntry(h1,"{}^{214}Bi Bulk","l");
+  leg->AddEntry(h2,"{}^{214}Bi Surface","l");
+  leg->AddEntry(h3,"{}^{214}Bi Tracker","l");
+  leg->Draw("same");
 
 }
