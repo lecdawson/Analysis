@@ -18,26 +18,26 @@ void alphaLengthCuts()
   int entriesWire=treeWire->GetEntries();
 
   TCanvas *c1= new TCanvas;
-  TH1F *h1 = new TH1F("h1", "h1", 50, 0, 500);
-  TH1F *h2 = new TH1F("h2", "h2", 50, 0, 500);
-  TH1F *h3 = new TH1F("h3", "h3", 50, 0, 500);
-  TH1F *h_total = new TH1F("h_total", "h_total", 50, 0, 500);
-  TH1F *data = new TH1F("data", "data", 50, 0, 500);
-  h3->SetTitle("Alpha track lengths Bi214, 3E5 1e1a wires, cut at 10 #mus, xy distance 40 cm");
-  h3->GetYaxis()->SetTitle("Number of events");
-  h3->GetXaxis()->SetTitle("Alpha length (mm)");
+  TH1F *h1 = new TH1F("h1", "h1", 100, 0, 500);
+  TH1F *h2 = new TH1F("h2", "h2", 100, 0, 500);
+  TH1F *h3 = new TH1F("h3", "h3", 100, 0, 500);
+  TH1F *h_total = new TH1F("h_total", "h_total", 100, 0, 500);
+  TH1F *data = new TH1F("data", "data", 100, 0, 500);
+  h2->SetTitle("Alpha track lengths Bi214, 3E5 1e1a wires, cut at 10 #mus, xy distance 40 cm");
+  h2->GetYaxis()->SetTitle("Number of events");
+  h2->GetXaxis()->SetTitle("Alpha length (mm)");
   h_total->SetTitle("Reference activity - source selection, 1e1a 3E5 events");
   h_total->GetYaxis()->SetTitle("");
   h_total->GetXaxis()->SetTitle("Alpha length (mm)");
 
-  h1->SetLineColor(kRed);
-  h1->SetFillColor(kRed);
+  h1->SetLineColor(kGray+2);
+  h1->SetFillColor(kGray+2);
   h1->SetFillStyle(3002);
-  h2->SetLineColor(kGreen);
-  h2->SetFillColor(kGreen);
+  h2->SetLineColor(kBlue-3);
+  h2->SetFillColor(kBlue-3);
   h2->SetFillStyle(3002);
-  h3->SetLineColor(kBlue);
-  h3->SetFillColor(kBlue);
+  h3->SetLineColor(kRed);
+  h3->SetFillColor(kRed);
   h3->SetFillStyle(3002);
   h_total->SetLineColor(kBlack);
 
@@ -110,11 +110,17 @@ void alphaLengthCuts()
   double number_of_entries_foil = h1->GetEntries();
   double number_of_entries_surf = h2->GetEntries();
   double number_of_entries_wire = h3->GetEntries();
-  double bin_width=10;
-  double h1_scale = (activity_foil/(h1->Integral()));
-  double h2_scale = (activity_surf/(h2->Integral()));
-  double h3_scale = (activity_wire/(h3->Integral()));
+  std::cout << "Bulk integral before scale: " << h1->Integral() << std::endl;
+  //double h1_scale = (activity_foil/(h1->Integral()));
+  double h1_scale = (activity_foil/300000);
+  //double h2_scale = (activity_surf/(h2->Integral()));
+  double h2_scale = (activity_surf/300000);
+  //double h3_scale = (activity_wire/(h3->Integral()));
+  double h3_scale = (activity_wire/300000);
 
+  h1->Sumw2();
+  h2->Sumw2();
+  h3->Sumw2();
   h1->Scale(h1_scale);
   h2->Scale(h2_scale);
   h3->Scale(h3_scale);
@@ -127,7 +133,6 @@ void alphaLengthCuts()
   h_total->Add(h3);
 
   h_total->Scale(exposure_in_seconds);
-  //h_total->Draw("hist");
 
   data->SetMarkerStyle(20);
   data->SetMarkerSize(0.7);
@@ -136,8 +141,8 @@ void alphaLengthCuts()
   // Use GetRandom n times, where n is a randomly generated number of events
   // based on poissonian law.
   TRandom *eventGenerator = new TRandom3();
-  int random_number_of_entries = eventGenerator->Poisson(30000);
-  for(int n=0; n<random_number_of_entries; n++){
+  int random_number_of_entries = eventGenerator->Poisson(3418/*h_total->Integral()*/);
+  for(int n=0; n<=random_number_of_entries; n++){
        data->Fill(h_total->GetRandom());
      }
 
@@ -147,39 +152,45 @@ void alphaLengthCuts()
   h1->Scale(exposure_in_seconds);
   h2->Scale(exposure_in_seconds);
   h3->Scale(exposure_in_seconds);
+
   mc->Add(h1);
   mc->Add(h2);
   mc->Add(h3);
   double value[3];
   double error[3];
-  TH1D* lengthcontrib[3];
+  TH1D* h_after[3];
   TH1D* fitresult;
 
   TFractionFitter* fit = new TFractionFitter(data, mc);
+  THStack *hs = new THStack("hs","Stacked 1D histograms");
   Int_t status = fit->Fit();
   std::cout << "fit status: " << status << std::endl;
   if (status == 0) {                       // check on fit status
      fitresult = (TH1D*) fit->GetPlot();
      for (int i=0; i<3; i++){
          fit -> GetResult(i,value[i],error[i]);
-         lengthcontrib[i] = (TH1D*)fit -> GetMCPrediction(i);
-         lengthcontrib[i] -> Scale( (value[i]*data->Integral()) / (lengthcontrib[i]->Integral()) );
+         h_after[i] = (TH1D*)fit -> GetMCPrediction(i);
+         h_after[i] -> Scale( (value[i]*data->Integral()) / (h_after[i]->Integral()) );
      }
      data->Draw("Ep");
      fitresult->Draw("same");
      fitresult->SetLineColor(kBlack);
-     lengthcontrib[2]->SetLineColor(kRed);
-     lengthcontrib[2]->SetFillColor(kRed);
-     lengthcontrib[2]->SetFillStyle(3002);
-     lengthcontrib[0]->SetLineColor(kGray+2);
-     lengthcontrib[0]->SetFillColor(kGray+2);
-     lengthcontrib[0]->SetFillStyle(3002);
-     lengthcontrib[1]->SetLineColor(kBlue-3);
-     lengthcontrib[1]->SetFillColor(kBlue-3);
-     lengthcontrib[1]->SetFillStyle(3002);
-     lengthcontrib[2]->Draw("hist same");
-     lengthcontrib[0]->Draw("hist same");
-     lengthcontrib[1]->Draw("hist same");
+     h_after[2]->SetLineColor(kRed);
+     h_after[2]->SetFillColor(kRed);
+     h_after[2]->SetFillStyle(3002);
+     h_after[0]->SetLineColor(kGray+2);
+     h_after[0]->SetFillColor(kGray+2);
+     h_after[0]->SetFillStyle(3002);
+     h_after[1]->SetLineColor(kBlue-3);
+     h_after[1]->SetFillColor(kBlue-3);
+     h_after[1]->SetFillStyle(3002);
+     //hs->Add(h_after[0]);
+     //hs->Add(h_after[1]);
+     //hs->Add(h_after[2]);
+     //hs->Draw("hist same");
+     h_after[0]->Draw("hist same");
+     h_after[1]->Draw("hist same");
+     h_after[2]->Draw("hist same");
      data->SetTitle("Pseudo-experiment with three contributions after 60 day exposure");
      data->GetXaxis()->SetTitle("Alpha Lengths [mm]");
    }
@@ -188,9 +199,9 @@ void alphaLengthCuts()
    leg->SetFillColor(0);
    leg->AddEntry(data,"Data","lep");
    leg->AddEntry(fitresult,"Fit Result","l");
-   leg->AddEntry(lengthcontrib[0],"Scaled {}^{214}Bi Bulk","f");
-   leg->AddEntry(lengthcontrib[1],"Scaled {}^{214}Bi Surface","f");
-   leg->AddEntry(lengthcontrib[2],"Scaled {}^{214}Bi Tracker","f");
+   leg->AddEntry(h_after[0],"Scaled {}^{214}Bi Bulk","f");
+   leg->AddEntry(h_after[1],"Scaled {}^{214}Bi Surface","f");
+   leg->AddEntry(h_after[2],"Scaled {}^{214}Bi Tracker","f");
    leg->Draw("same");
   // for(int pseudo; pseudo<100; pseudo++){
   //   int number_of_entries = 0;
