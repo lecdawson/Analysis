@@ -18,7 +18,7 @@ void sequentialCuts()
   int entriesSurf=treeSurf->GetEntries();
   //cout<<"Total events "<<entriesSurf<<endl;
   int entriesWire=treeWire->GetEntries();
-  cout<<"Total events "<<entriesWire<<endl;
+  cout<<"Total events "<<entriesSurf<<endl;
 
   //For sequential electron cuts
   //candidates that have an associated hit
@@ -44,17 +44,22 @@ void sequentialCuts()
   //coming from the foil
   int foil_alpha_count=0;
   int passes_alpha_from_foil=0;
+  bool topology_1e1alpha=0;
+  int electron_alpha_count=0;
+  vector<bool> *alphas_from_foil=0;
 
-  treeWire->SetBranchAddress("reco.associated_track_count", &associated_track_count);
-  treeWire->SetBranchAddress("reco.number_of_electrons", &number_of_electrons);
-  treeWire->SetBranchAddress("reco.electrons_from_foil", &electronsFromFoil);
-  treeWire->SetBranchAddress("reco.electron_hits_mainwall", &electron_hits_main_wall);
-  treeWire->SetBranchAddress("reco.electron_charges", &electron_charges);
-  treeWire->SetBranchAddress("reco.alpha_count", &alpha_count);
-  treeWire->SetBranchAddress("reco.foil_alpha_count", &foil_alpha_count);
+  treeSurf->SetBranchAddress("reco.topology_1e1alpha",&topology_1e1alpha);
+  treeSurf->SetBranchAddress("reco.associated_track_count", &associated_track_count);
+  treeSurf->SetBranchAddress("reco.number_of_electrons", &number_of_electrons);
+  treeSurf->SetBranchAddress("reco.electrons_from_foil", &electronsFromFoil);
+  treeSurf->SetBranchAddress("reco.electron_hits_mainwall", &electron_hits_main_wall);
+  treeSurf->SetBranchAddress("reco.electron_charges", &electron_charges);
+  treeSurf->SetBranchAddress("reco.alpha_count", &alpha_count);
+  treeSurf->SetBranchAddress("reco.foil_alpha_count", &foil_alpha_count);
+  treeSurf->SetBranchAddress("reco.alphas_from_foil", &alphas_from_foil);
 
-  for(int entry=0; entry < entriesWire; entry++){
-    treeWire->GetEntry(entry);
+  for(int entry=0; entry < entriesSurf; entry++){
+    treeSurf->GetEntry(entry);
     total_number_of_electrons+=number_of_electrons;
     total_number_associated_tracks+=associated_track_count;
 
@@ -77,14 +82,20 @@ void sequentialCuts()
     if(alpha_count >0){
         passes_alpha_from_foil+=foil_alpha_count;
       }
+    if(topology_1e1alpha){
+      if(electronsFromFoil->at(0)==1 && electron_hits_main_wall->at(0)==1 && electron_charges->at(0)==8 && alphas_from_foil->at(0)==1){
+        electron_alpha_count++;
+      }
+    }
   }
 
-  cout<<"Total number of associated hits: "<<total_number_associated_tracks<<" efficiency: "<<double(total_number_associated_tracks)/double(entriesWire)*100<<"%"<<endl;
-  cout<<"Total number of reconstructed electrons (prompt and calo hit): "<<total_number_of_electrons<<" efficiency: "<<double(total_number_of_electrons)/double(entriesWire)*100<<"%"<<endl;
-  cout<<"Passes electron from foil: "<<passes_electron_from_foil<<" efficiency: "<<double(passes_electron_from_foil)/double(entriesWire)*100<<"%"<<endl;
-  cout<<"Passes electron from foil and hits main wall: "<<passes_electron_from_foil_main_wall<<" efficiency: "<<double(passes_electron_from_foil_main_wall)/double(entriesWire)*100<<"%"<<endl;
-  cout<<"Passes electron from foil, hits main wall, and has negative charge: "<<passes_electron_from_foil_main_wall_neg<<" efficiency: "<<double(passes_electron_from_foil_main_wall_neg)/double(entriesWire)*100<<"%"<<endl;
+  cout<<"Total number of associated hits: "<<total_number_associated_tracks<<" efficiency: "<<(double(total_number_associated_tracks)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Total number of reconstructed electrons (prompt and calo hit): "<<total_number_of_electrons<<" efficiency: "<<(double(total_number_of_electrons)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Passes electron from foil: "<<passes_electron_from_foil<<" efficiency: "<<(double(passes_electron_from_foil)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Passes electron from foil and hits main wall: "<<passes_electron_from_foil_main_wall<<" efficiency: "<<(double(passes_electron_from_foil_main_wall)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Passes electron from foil, hits main wall, and has negative charge: "<<passes_electron_from_foil_main_wall_neg<<" efficiency: "<<(double(passes_electron_from_foil_main_wall_neg)/double(entriesSurf))*100<<"%"<<endl;
 
-  cout<<"Total number of reconstructed alphas (undefined, no calo, is delayed): "<<total_number_of_alphas<<" efficiency: "<<double(total_number_of_alphas)/double(entriesWire)*100<<"%"<<endl;
-  cout<<"Passes alpha from foil: "<<passes_alpha_from_foil<<" efficiency: "<<double(passes_alpha_from_foil)/double(entriesWire)*100<<"%"<<endl;
+  cout<<"Total number of reconstructed alphas (undefined, no calo, is delayed): "<<total_number_of_alphas<<" efficiency: "<<(double(total_number_of_alphas)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Passes alpha from foil: "<<passes_alpha_from_foil<<" efficiency: "<<(double(passes_alpha_from_foil)/double(entriesSurf))*100<<"%"<<endl;
+  cout<<"Passes 1e1alpha: "<<electron_alpha_count<<" efficiency: "<<(double(electron_alpha_count)/double(entriesSurf))*100<<"%"<<endl;
 }
