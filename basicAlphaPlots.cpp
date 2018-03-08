@@ -2,9 +2,9 @@ void basicAlphaPlots()
 {
   //Below is just for events from the foil
   //Read in all of the sensitivity files for different generators
-  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
+  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/1E6Sample/sensitivity.root";
+  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/1E6Sample/sensitivity.root";
+  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/1E6Sample/sensitivity.root";
 
   TFile *file1=new TFile(foils.c_str());
   TFile *file2=new TFile(surface.c_str());
@@ -17,12 +17,12 @@ void basicAlphaPlots()
   int entriesSurf=treeSurf->GetEntries();
   int entriesWire=treeWire->GetEntries();
 
-  TH1F *h1 = new TH1F("h1", "h1", 100, 0, 1000);
-  TH1F *h2 = new TH1F("h2", "h2", 100, 0, 1000);
-  TH1F *h3 = new TH1F("h3", "h3", 100, 0, 1000);
-  h2->SetTitle("Track length of alphas, Bi214, 3E5 events from all generators");
+  TH1F *h1 = new TH1F("h1", "h1", 100, 0, 2500);
+  TH1F *h2 = new TH1F("h2", "h2", 100, 0, 2500);
+  TH1F *h3 = new TH1F("h3", "h3", 100, 0, 2500);
+  h2->SetTitle("Alpha times, Bi214, 1E6 events from all generators");
   h2->GetYaxis()->SetTitle("Number of events");
-  h2->GetXaxis()->SetTitle("Length [mm]");
+  h2->GetXaxis()->SetTitle("Time [#mus]");
 
   h1->SetLineColor(kGray+2);
   h2->SetLineColor(kBlue-3);
@@ -34,7 +34,7 @@ void basicAlphaPlots()
   int foil_alpha_count=0;
   vector<double> *alpha_vertex_x=0;
   double alpha_track_length=0;
-  int delayed_cluster_hit_count=0;
+  vector<int> *delayed_cluster_hit_count=0;
   double proj_track_length_alpha=0;
   double alpha_delay_time=0;
 
@@ -70,8 +70,8 @@ void basicAlphaPlots()
     if(alpha_count >0){
       for(int alpha=0; alpha<alpha_count; alpha++){
         if(alphas_from_foil->at(alpha)==1){
-          //alpha_delay_time=(delayed_track_time->at(alpha))/1000;
-          h1->Fill(alpha_track_length);
+          alpha_delay_time=(delayed_track_time->at(alpha))/1000;
+          h1->Fill(alpha_delay_time);
         }
       }
     }
@@ -81,8 +81,8 @@ void basicAlphaPlots()
     if(alpha_count >0){
       for(int alpha=0; alpha<alpha_count; alpha++){
         if(alphas_from_foil->at(alpha)==1){
-          //alpha_delay_time=(delayed_track_time->at(alpha))/1000;
-          h2->Fill(alpha_track_length);
+          alpha_delay_time=(delayed_track_time->at(alpha))/1000;
+          h2->Fill(alpha_delay_time);
         }
       }
     }
@@ -92,8 +92,8 @@ void basicAlphaPlots()
     if(alpha_count >0){
       for(int alpha=0; alpha<alpha_count; alpha++){
         if(alphas_from_foil->at(alpha)==1){
-          //alpha_delay_time=(delayed_track_time->at(alpha))/1000;
-          h3->Fill(alpha_track_length);
+          alpha_delay_time=(delayed_track_time->at(alpha))/1000;
+          h3->Fill(alpha_delay_time);
         }
       }
     }
