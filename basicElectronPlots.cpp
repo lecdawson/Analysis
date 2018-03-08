@@ -2,9 +2,9 @@ void basicElectronPlots()
 {
   //Below is just for events from the foil
   //Read in all of the sensitivity files for different generators
-  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
+  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/1E6Sample/sensitivity.root";
+  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/1E6Sample/sensitivity.root";
+  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/1E6Sample/sensitivity.root";
 
   TFile *file1=new TFile(foils.c_str());
   TFile *file2=new TFile(surface.c_str());
@@ -17,12 +17,12 @@ void basicElectronPlots()
   int entriesSurf=treeSurf->GetEntries();
   int entriesWire=treeWire->GetEntries();
 
-  TH1F *h1 = new TH1F("h1", "h1", 39, 0, 39);
-  TH1F *h2 = new TH1F("h2", "h2", 39, 0, 39);
-  TH1F *h3 = new TH1F("h3", "h3", 39, 0, 39);
-  h1->SetTitle("Number of geiger hits for electrons, Bi214, 3E5 events all generators");
+  TH1F *h1 = new TH1F("h1", "h1", 170, 0, 3.4);
+  TH1F *h2 = new TH1F("h2", "h2", 170, 0, 3.4);
+  TH1F *h3 = new TH1F("h3", "h3", 170, 0, 3.4);
+  h1->SetTitle("Energy spectrum of electrons, Bi214, 1E6 events all generators");
   h1->GetYaxis()->SetTitle("Number of events");
-  h1->GetXaxis()->SetTitle("Number of hits");
+  h1->GetXaxis()->SetTitle("Energy [MeV]");
 
   h1->SetLineColor(kGray+2);
   h2->SetLineColor(kBlue-3);
@@ -65,7 +65,7 @@ void basicElectronPlots()
     if(number_of_electrons >0){
       for(int electron=0; electron<number_of_electrons; electron++){
         if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
-          h1->Fill(electron_hit_counts->at(electron));
+          h1->Fill(electron_energies->at(electron));
         }
       }
     }
@@ -75,7 +75,7 @@ void basicElectronPlots()
     if(number_of_electrons >0){
       for(int electron=0; electron<number_of_electrons; electron++){
         if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
-          h2->Fill(electron_hit_counts->at(electron));
+          h2->Fill(electron_energies->at(electron));
         }
       }
     }
@@ -85,7 +85,7 @@ void basicElectronPlots()
     if(number_of_electrons >0){
       for(int electron=0; electron<number_of_electrons; electron++){
         if(electronsFromFoil->at(electron)==1 && electron_hits_main_wall->at(electron)==1 && electron_charges->at(electron)==8){
-          h3->Fill(electron_hit_counts->at(electron));
+          h3->Fill(electron_energies->at(electron));
         }
       }
     }
