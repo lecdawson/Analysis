@@ -2,9 +2,9 @@ void alphaLengthCuts()
 {
   //Below is just for events from the foil
   //Read in all of the sensitivity files for different generators
-  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
-  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/3E5Sample/ConfigChange/sensitivity.root";
+  string foils="/home/vagrant/PhD/PhDYear3/Background/Bi214_Foils/ThibaudStudy/1E6Sample/sensitivity.root";
+  string surface="/home/vagrant/PhD/PhDYear3/Background/Bi214_Surface/ThibaudStudy/1E6Sample/sensitivity.root";
+  string wires="/home/vagrant/PhD/PhDYear3/Background/Bi214_Wires/ThibaudStudy/1E6Sample/sensitivity.root";
 
   TFile *file1=new TFile(foils.c_str());
   TFile *file2=new TFile(surface.c_str());
@@ -23,21 +23,33 @@ void alphaLengthCuts()
   TH1F *h3 = new TH1F("h3", "h3", 100, 0, 500);
   TH1F *h_total = new TH1F("h_total", "h_total", 100, 0, 500);
   TH1F *data = new TH1F("data", "data", 100, 0, 500);
-  h2->SetTitle("Alpha track lengths Bi214, 3E5 1e1a wires, cut at 10 #mus, xy distance 40 cm");
-  h2->GetYaxis()->SetTitle("Number of events");
-  h2->GetXaxis()->SetTitle("Alpha length (mm)");
-  h_total->SetTitle("Reference activity - source selection, 1e1a 3E5 events");
-  h_total->GetYaxis()->SetTitle("");
+  TH1F *fitted_activity_bulk = new TH1F("fitted_activity_bulk", "fitted_activity_bulk", 100, 0.005, 0.03);
+  TH1F *fitted_activity_surf = new TH1F("fitted_activity_surf", "fitted_activity_surf", 100, 0.04, 0.8);
+  TH1F *fitted_activity_wire = new TH1F("fitted_activity_wire", "fitted_activity_wire", 100, 0.02, 0.07);
+  data->SetTitle("Pseudo-experiment with three contributions after 60 day exposure");
+  data->GetXaxis()->SetTitle("#alpha track length (mm)");
+  data->GetYaxis()->SetTitle("Events/(5)");
+  h1->SetTitle("Alpha track lengths Bi214, 1E6 1e1a field wires,10 #mus, xy 40 cm");
+  h1->GetYaxis()->SetTitle("Number of events");
+  h1->GetXaxis()->SetTitle("Alpha length (mm)");
+  h_total->SetTitle("Reference activity - source selection, 1e1a 1E6 events");
+  h_total->GetYaxis()->SetTitle("(s^{-1})");
   h_total->GetXaxis()->SetTitle("Alpha length (mm)");
+  fitted_activity_bulk->SetTitle("Fitted activity - source bulk");
+  fitted_activity_surf->SetTitle("Fitted activity - source surf");
+  fitted_activity_wire->SetTitle("Fitted activity - source wire");
+  fitted_activity_bulk->GetXaxis()->SetTitle("Activity (Bq)");
+  fitted_activity_surf->GetXaxis()->SetTitle("Activity (Bq)");
+  fitted_activity_wire->GetXaxis()->SetTitle("Activity (Bq)");
 
-  h1->SetLineColor(kGray+2);
-  h1->SetFillColor(kGray+2);
+  h1->SetLineColor(kRed);
+  h1->SetFillColor(kRed);
   h1->SetFillStyle(3002);
-  h2->SetLineColor(kBlue-3);
-  h2->SetFillColor(kBlue-3);
+  h2->SetLineColor(kGray+2);
+  h2->SetFillColor(kGray+2);
   h2->SetFillStyle(3002);
-  h3->SetLineColor(kRed);
-  h3->SetFillColor(kRed);
+  h3->SetLineColor(kBlue);
+  h3->SetFillColor(kBlue);
   h3->SetFillStyle(3002);
   h_total->SetLineColor(kBlack);
 
@@ -58,6 +70,39 @@ void alphaLengthCuts()
   vector<int> *electron_charges=0;
   vector<bool> *electronsFromFoil=0;
   double alpha_track_length=0;
+
+  int exposure=0;
+  int exposure_in_seconds=0;
+  int number_of_entries_bulk=0;
+  int number_of_entries_surf=0;
+  int number_of_entries_wire=0;
+  int number_exp_bulk=0;
+  int number_exp_surf=0;
+  int number_exp_wire=0;
+  int total_number_exp=0;
+  double activity_bulk_new=0;
+  double activity_surf_new=0;
+  double activity_wire_new=0;
+  double efficiency_bulk=0;
+  double efficiency_surf=0;
+  double efficiency_wire=0;
+  double old_fraction_bulk=0;
+  double old_fraction_surf=0;
+  double old_fraction_wire=0;
+  int total_number_entries=0;
+
+  double value[3];
+  double error[3];
+  TH1D* h_after[3];
+  TH1D* fitresult;
+
+  double activity_bulk=0.0154;
+  double activity_surf=0.00018;
+  double activity_wire=0.0455;
+
+  double h1_scale=0;
+  double h2_scale=0;
+  double h3_scale=0;
 
   treeFoil->SetBranchAddress("reco.topology_1e1alpha",&topology_1e1alpha);
   treeFoil->SetBranchAddress("reco.electron_hits_mainwall", &electron_hits_main_wall);
@@ -104,19 +149,12 @@ void alphaLengthCuts()
   }
 
   //normalise the histograms, scaling by activity
-  double activity_foil=0.0154;
-  double activity_surf=0.00018;
-  double activity_wire=0.0455;
-  double number_of_entries_foil = h1->GetEntries();
-  double number_of_entries_surf = h2->GetEntries();
-  double number_of_entries_wire = h3->GetEntries();
-  std::cout << "Bulk integral before scale: " << h1->Integral() << std::endl;
-  //double h1_scale = (activity_foil/(h1->Integral()));
-  double h1_scale = (activity_foil/300000);
-  //double h2_scale = (activity_surf/(h2->Integral()));
-  double h2_scale = (activity_surf/300000);
-  //double h3_scale = (activity_wire/(h3->Integral()));
-  double h3_scale = (activity_wire/300000);
+  number_of_entries_bulk = h1->GetEntries();
+  number_of_entries_surf = h2->GetEntries();
+  number_of_entries_wire = h3->GetEntries();
+  h1_scale = (activity_bulk/1000000);
+  h2_scale = (activity_surf/1000000);
+  h3_scale = (activity_wire/1000000);
 
   h1->Sumw2();
   h2->Sumw2();
@@ -125,23 +163,39 @@ void alphaLengthCuts()
   h2->Scale(h2_scale);
   h3->Scale(h3_scale);
 
-  double exposure=60;
-  double exposure_in_seconds=exposure*24*60*60;
+  exposure=60;
+  exposure_in_seconds=exposure*24*60*60;
 
+  //Sum the normalised histograms of the individual generators
   h_total->Add(h1);
   h_total->Add(h2);
   h_total->Add(h3);
 
+  //Scale by the exposure which here is 60 days
   h_total->Scale(exposure_in_seconds);
 
   data->SetMarkerStyle(20);
   data->SetMarkerSize(0.7);
 
+  //Calculate the old fractions by finding the expected number of entries
+  // N_exp = efficiency*activity*exposure
+  total_number_entries=h_total->GetEntries();
+  efficiency_bulk=(double(number_of_entries_bulk)/1000000);
+  efficiency_surf=(double(number_of_entries_surf)/1000000);
+  efficiency_wire=(double(number_of_entries_wire)/1000000);
+  number_exp_bulk=efficiency_bulk*activity_bulk*exposure_in_seconds;
+  number_exp_surf=efficiency_surf*activity_surf*exposure_in_seconds;
+  number_exp_wire=efficiency_wire*activity_wire*exposure_in_seconds;
+  total_number_exp=number_exp_bulk+number_exp_surf+number_exp_wire;
+  old_fraction_bulk=double(number_exp_bulk)/double(total_number_exp);
+  old_fraction_surf=double(number_exp_surf)/double(total_number_exp);
+  old_fraction_wire=double(number_exp_wire)/double(total_number_exp);
+
   // Now need to generate sudo data from these histograms
   // Use GetRandom n times, where n is a randomly generated number of events
   // based on poissonian law.
   TRandom *eventGenerator = new TRandom3();
-  int random_number_of_entries = eventGenerator->Poisson(3418/*h_total->Integral()*/);
+  int random_number_of_entries = eventGenerator->Poisson(total_number_exp);
   for(int n=0; n<=random_number_of_entries; n++){
        data->Fill(h_total->GetRandom());
      }
@@ -156,10 +210,6 @@ void alphaLengthCuts()
   mc->Add(h1);
   mc->Add(h2);
   mc->Add(h3);
-  double value[3];
-  double error[3];
-  TH1D* h_after[3];
-  TH1D* fitresult;
 
   TFractionFitter* fit = new TFractionFitter(data, mc);
   THStack *hs = new THStack("hs","Stacked 1D histograms");
@@ -175,24 +225,30 @@ void alphaLengthCuts()
      data->Draw("Ep");
      fitresult->Draw("same");
      fitresult->SetLineColor(kBlack);
-     h_after[2]->SetLineColor(kRed);
-     h_after[2]->SetFillColor(kRed);
+     h_after[2]->SetLineColor(kBlue);
+     h_after[2]->SetFillColor(kBlue);
      h_after[2]->SetFillStyle(3002);
-     h_after[0]->SetLineColor(kGray+2);
-     h_after[0]->SetFillColor(kGray+2);
+     h_after[0]->SetLineColor(kRed);
+     h_after[0]->SetFillColor(kRed);
      h_after[0]->SetFillStyle(3002);
-     h_after[1]->SetLineColor(kBlue-3);
-     h_after[1]->SetFillColor(kBlue-3);
+     h_after[1]->SetLineColor(kGray+2);
+     h_after[1]->SetFillColor(kGray+2);
      h_after[1]->SetFillStyle(3002);
-     //hs->Add(h_after[0]);
-     //hs->Add(h_after[1]);
-     //hs->Add(h_after[2]);
-     //hs->Draw("hist same");
-     h_after[0]->Draw("hist same");
-     h_after[1]->Draw("hist same");
-     h_after[2]->Draw("hist same");
-     data->SetTitle("Pseudo-experiment with three contributions after 60 day exposure");
-     data->GetXaxis()->SetTitle("Alpha Lengths [mm]");
+     hs->Add(h_after[0]);
+     hs->Add(h_after[1]);
+     hs->Add(h_after[2]);
+     hs->Draw("hist same");
+     //h_after[0]->Draw("hist same");
+     //h_after[1]->Draw("hist same");
+     //h_after[2]->Draw("hist same");
+
+     //Calculate the new activities predicted by the fit
+     activity_bulk_new = (value[0]/old_fraction_bulk)*activity_bulk;
+     activity_surf_new = (value[1]/old_fraction_surf)*activity_surf;
+     activity_wire_new = (value[2]/old_fraction_wire)*activity_wire;
+     cout<<"New activity bulk: "<<activity_bulk_new<<endl;
+     cout<<"New activity surf: "<<activity_surf_new<<endl;
+     cout<<"New activity wire: "<<activity_wire_new<<endl;
    }
 
    TLegend *leg = new TLegend(0.1293878,0.5787037,0.295102,0.9074074);
