@@ -1,0 +1,10 @@
+#Config parameters for analyseSensitivity
+#File locations specified below
+0nubbPath=/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_0nubb_bulk_sensitivity.root
+2nubbPath=/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_2nubb_bulk_sensitivity.root
+208TlPath=/home/vagrant/PhD/PhDYear3/Background/MCC1/208Tl_bulk_sensitivity.root
+214BiBulkPath=/home/vagrant/PhD/PhDYear3/Background/MCC1/214Bi_bulk_sensitivity.root
+
+#Activities to be used in µBq
+208TlActivity=457
+214BiActivity=4100
