@@ -11,6 +11,10 @@
 #include "TLimitDataSource.h"
 #include "TConfidenceLevel.h"
 #include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <string>
+
 
 using namespace std;
 
@@ -23,7 +27,6 @@ double AVOGADRO=6.022140e23;
 string MAINCUT= "reco.number_of_electrons==2 && reco.passes_two_calorimeters && reco.passes_associated_calorimeters && (reco.higher_electron_energy != reco.lower_electron_energy)";
 // ??? These numbers are the sort of thing we might vary with machine learning or at least look at adapting
 string PROBCUT ="&& reco.external_probability<0.01 && reco.internal_probability>0.04";
-
 
 // I use this to store static info about 82Se, 150Nd, 48Ca. Only stuff that never changes
 // So things like names and molar mass
@@ -53,6 +56,31 @@ void Isotope::Initialize(string isotopeName, int molarMass)
   this->SetMolarMass(molarMass);
 }
 
+string ReadConfigValue(string configValue)
+{
+  //Read in config file here containing paths to files
+  //could add an input variable to output in form of string or double here
+  ifstream cFile ("sensitivityConfig.txt");
+  if (cFile.is_open())
+  {
+    string line;
+    while(getline(cFile, line)){
+        line.erase(remove_if(line.begin(), line.end(), ::isspace),
+                             line.end());
+        if(line[0] == '#' || line.empty())
+            continue;
+        auto delimiterPos = line.find("=");
+        auto name = line.substr(0, delimiterPos);
+        auto value = line.substr(delimiterPos + 1);
+        string::size_type sz;
+        if (name.compare(configValue) == 0)
+          return value;
+    }
+    cFile.close();
+  }
+  else
+  cout << "Unable to open config file." << '\n';
+}
 // This is just a class to hold static info about the background isotope samples
 // We  set the activities here
 // ?? We probably want to make a version of this that just updates activity so we can vary them
@@ -186,7 +214,11 @@ int main()
 {
   IsotopeSample *se_sample= new IsotopeSample("Se");
   // !!!!! You need to provide a 0nu and a 2 nu file here
-  MakePlotsForIsotope("/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_0nubb_bulk_sensitivity.root", "/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_2nubb_bulk_sensitivity.root", se_sample);
+  string filename0nubb = ReadConfigValue("0nubbPath");
+  string filename2nubb = ReadConfigValue("2nubbPath");
+  cout<<"Path for 0nubb: "<<filename0nubb<<endl;
+  cout<<"Path for 2nubb: "<<filename2nubb<<endl;
+  MakePlotsForIsotope(filename0nubb, filename2nubb, se_sample);
 //  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
   // IsotopeSample *ca_sample= new IsotopeSample("Ca");
@@ -328,8 +360,23 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // As you can see I was v confused about what activities to use
   // We can add more in here you can see the examples of where I have in the past tried to use surface and tracker samples. But the numbers I used were bizarre and wrong so I commented them out.
 
-// Newest measurement 370uBq total
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/208Tl_bulk_sensitivity.root","foils"));
+  string filenameTl208 = ReadConfigValue("208TlPath");
+  string filenameBi214 = ReadConfigValue("214BiBulkPath");
+  string activityStringTl = ReadConfigValue("208TlActivity");
+  string activityStringBi = ReadConfigValue("214BiActivity");
+
+  cout<<"Path for Thalium: "<<filenameTl208<<endl;
+  cout<<"Path for Bismuth: "<<filenameBi214<<endl;
+
+  //convert strings to doubles for use in BackgroundIsotope
+  string::size_type sz;
+  double activityMicroBqTl = stod(activityStringTl,&sz);
+  double activityMicroBqBi = stod(activityStringBi,&sz);
+  cout<<"Activity used for Tl: "<<activityMicroBqTl<<endl;
+  cout<<"Activity used for Bi: "<<activityMicroBqBi<<endl;
+
+// Newest measurement 457uBq total worst case
+  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, activityMicroBqTl,filenameTl208,"foils"));
      // target is 2 uBq/kg (J Mott thesis)
 //  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_foil_sensitivity.root","foils"));
 
@@ -337,7 +384,8 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // However target is 10 uBq/kg (J Mott thesis)
   // (HOW ARE THESE SO DIFFERENT?) so try that for now
   // Using Dave's "typical measurement 300uBq per kilo"
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/214Bi_bulk_sensitivity.root","foils"));
+  // lastest worst case measurements suggest 4.1 mBq total
+  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, activityMicroBqBi,filenameBi214,"foils"));
 
  // backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
 //
